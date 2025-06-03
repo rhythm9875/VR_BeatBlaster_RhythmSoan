@@ -4,7 +4,10 @@ using UnityEngine;
 
 [AddComponentMenu("Nokobot/Modern Guns/Simple Shoot")]
 public class SimpleShoot : MonoBehaviour
-{
+{   
+    public int maxAmmo = 10; // Maximum ammo in the gun
+    private int currentAmmo; // Current ammo in the gun
+
     [Header("Prefab Refrences")]
     public GameObject bulletPrefab;
     public GameObject casingPrefab;
@@ -19,8 +22,8 @@ public class SimpleShoot : MonoBehaviour
     [Tooltip("Specify time to destory the casing object")] [SerializeField] private float destroyTimer = 2f;
     [Tooltip("Bullet Speed")] [SerializeField] private float shotPower = 500f;
     [Tooltip("Casing Ejection Speed")] [SerializeField] private float ejectPower = 150f;
-    [Tooltip("Line width")] [SerializeField] private float lineWidth = 0.1f;
-    [Tooltip("Line duration")] [SerializeField] private float lineDuration = 5f;
+    [Tooltip("Line width")] [SerializeField] private float lineWidth = 0.5f;
+    [Tooltip("Line duration")] [SerializeField] private float lineDuration = 0.5f;
     [Tooltip("Line color")] [SerializeField] private Color lineColor = Color.yellow;
 
     void Start()
@@ -30,15 +33,34 @@ public class SimpleShoot : MonoBehaviour
 
         if (gunAnimator == null)
             gunAnimator = GetComponentInChildren<Animator>();
+
+        Reload();
+    }
+
+    void Reload()
+    {
+        // Reset current ammo to max ammo
+        currentAmmo = maxAmmo;
     }
 
     void Update()
     {
         //If you want a different input, change it here
-        if (Input.GetButtonDown("Fire1"))
+        
+        if (Vector3.Angle(transform.up, Vector3.up) > 100 && currentAmmo < maxAmmo)
         {
-            //Calls animation on the gun that has the relevant animation events that will fire
-            gunAnimator.SetTrigger("Fire");
+            // If the gun is tilted too much, reload automatically
+            Reload();
+        }
+        if (Input.GetButtonDown("Fire1") && Vector3.Angle(transform.up, Vector3.up) < 100){
+            if (currentAmmo > 0)
+            {
+                gunAnimator.SetTrigger("Fire");
+            }
+            else
+            {
+                Debug.Log("Out of ammo!");
+            }
         }
     }
 
@@ -46,8 +68,11 @@ public class SimpleShoot : MonoBehaviour
     void Shoot()
     {
         //cancels if there's no bullet prefeb
-        if (!bulletPrefab)
-        { return; }
+        if (!bulletPrefab || currentAmmo <= 0)
+        return;
+
+        currentAmmo--; // Reduce ammo here
+        Debug.Log("Ammo remaining: " + currentAmmo);
 
         // Create and fire the bullet
         Instantiate(bulletPrefab, barrelLocation.position, barrelLocation.rotation).GetComponent<Rigidbody>().AddForce(barrelLocation.forward * shotPower);
@@ -68,7 +93,6 @@ public class SimpleShoot : MonoBehaviour
 
     void CreateTracerLine()
     {
-         Debug.Log("Tracer function called");
         // Raycast to detect hit
         RaycastHit hitInfo;
         bool hasHit = Physics.Raycast(barrelLocation.position, barrelLocation.forward, out hitInfo, 100f);
@@ -101,7 +125,6 @@ public class SimpleShoot : MonoBehaviour
         // Add slight offset to start point to avoid clipping
         startPoint += barrelLocation.forward * 0.1f;
         
-        
         lineRenderer.SetPosition(0, startPoint);
         lineRenderer.SetPosition(1, endPoint);
         
@@ -122,15 +145,15 @@ public class SimpleShoot : MonoBehaviour
         //Create the casing
         GameObject tempCasing;
         tempCasing = Instantiate(casingPrefab, casingExitLocation.position, casingExitLocation.rotation) as GameObject;
-        
+
         //Add force on casing to push it out
         tempCasing.GetComponent<Rigidbody>().AddExplosionForce(Random.Range(ejectPower * 0.7f, ejectPower), (casingExitLocation.position - casingExitLocation.right * 0.3f - casingExitLocation.up * 0.6f), 1f);
-        
+
         //Add torque to make casing spin in random direction
         tempCasing.GetComponent<Rigidbody>().AddTorque(new Vector3(0, Random.Range(100f, 500f), Random.Range(100f, 1000f)), ForceMode.Impulse);
 
         //Destroy casing after X seconds
         Destroy(tempCasing, destroyTimer);
-
+        
     }
 }
