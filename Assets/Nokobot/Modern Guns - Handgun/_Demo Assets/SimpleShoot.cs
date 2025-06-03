@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI; 
 
 [AddComponentMenu("Nokobot/Modern Guns/Simple Shoot")]
 public class SimpleShoot : MonoBehaviour
@@ -8,10 +9,20 @@ public class SimpleShoot : MonoBehaviour
     public int maxAmmo = 10; // Maximum ammo in the gun
     private int currentAmmo; // Current ammo in the gun
 
+    [Header("UI Elements")]
+    public Text ammoText; 
+
     [Header("Prefab Refrences")]
     public GameObject bulletPrefab;
     public GameObject casingPrefab;
     public GameObject muzzleFlashPrefab;
+
+    [Header("Audio References")]
+    [Tooltip("Audio clip for shooting")]
+    public AudioClip shootSound;
+    [Tooltip("Audio clip for reloading")]
+    public AudioClip reloadSound;
+    private AudioSource audioSource;
 
     [Header("Location Refrences")]
     [SerializeField] private Animator gunAnimator;
@@ -33,6 +44,11 @@ public class SimpleShoot : MonoBehaviour
 
         if (gunAnimator == null)
             gunAnimator = GetComponentInChildren<Animator>();
+         audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
 
         Reload();
     }
@@ -41,6 +57,11 @@ public class SimpleShoot : MonoBehaviour
     {
         // Reset current ammo to max ammo
         currentAmmo = maxAmmo;
+        if (reloadSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(reloadSound);
+        }
+         UpdateAmmoUI();
     }
 
     void Update()
@@ -74,6 +95,11 @@ public class SimpleShoot : MonoBehaviour
         currentAmmo--; // Reduce ammo here
         Debug.Log("Ammo remaining: " + currentAmmo);
 
+        if (shootSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(shootSound);
+        }
+
         // Create and fire the bullet
         Instantiate(bulletPrefab, barrelLocation.position, barrelLocation.rotation).GetComponent<Rigidbody>().AddForce(barrelLocation.forward * shotPower);
 
@@ -89,6 +115,7 @@ public class SimpleShoot : MonoBehaviour
 
         // Create tracer line effect dynamically
         CreateTracerLine();
+         UpdateAmmoUI();
     }
 
     void CreateTracerLine()
@@ -156,4 +183,12 @@ public class SimpleShoot : MonoBehaviour
         Destroy(tempCasing, destroyTimer);
         
     }
+    void UpdateAmmoUI()
+{
+    if (ammoText != null)
+    {
+        ammoText.text = $"Ammo: {currentAmmo} / {maxAmmo}";
+    }
+}
+
 }
