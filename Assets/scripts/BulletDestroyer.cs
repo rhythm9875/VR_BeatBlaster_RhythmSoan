@@ -18,6 +18,7 @@ public class Collision_Manager_bullet : MonoBehaviour
         if (collision.gameObject.tag == "Walls")
         {
             Destroy(gameObject);
+            Debug.Log("Bullet Destroyed on Wall Collision");
         }
         else if (collision.gameObject.tag == "Enemy")
         {
